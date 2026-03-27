@@ -1,0 +1,100 @@
+@import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700;900&family=Inter:wght@300;400;500;600;700&display=swap');
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-headline: "Space Grotesk", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+
+  --color-background: #111316;
+  --color-on-background: #e2e2e6;
+  --color-surface: #111316;
+  --color-on-surface: #e2e2e6;
+  --color-surface-bright: #37393e;
+  --color-surface-container-lowest: #0c0e11;
+  --color-surface-container-low: #1a1c1f;
+  --color-surface-container-high: #282a2d;
+  --color-surface-container-highest: #333538;
+  
+  --color-primary: #ffd79b;
+  --color-primary-container: #ffb300;
+  --color-on-primary-container: #432c00;
+  
+  --color-secondary: #d7ffc5;
+  --color-secondary-fixed: #79ff5b;
+  
+  --color-error: #ffb4ab;
+  --color-error-container: #93000a;
+  
+  --color-outline: #9e8e78;
+  --color-outline-variant: #514532;
+}
+
+@layer base {
+  body {
+    @apply bg-background text-on-background font-sans antialiased overflow-hidden;
+  }
+}
+
+@layer utilities {
+  .grid-overlay {
+    background-image: linear-gradient(to right, rgba(158, 142, 120, 0.05) 1px, transparent 1px),
+                      linear-gradient(to bottom, rgba(158, 142, 120, 0.05) 1px, transparent 1px);
+    background-size: 24px 24px;
+  }
+
+  .scanner-line {
+    height: 2px;
+    background: linear-gradient(90deg, transparent, rgba(255, 215, 155, 0.2), transparent);
+    position: absolute;
+    width: 100%;
+    top: 0;
+    animation: scan 4s linear infinite;
+  }
+
+  @keyframes scan {
+    0% { top: 0; }
+    100% { top: 100%; }
+  }
+
+  .hud-border {
+    border: 1px solid rgba(158, 142, 120, 0.2);
+    position: relative;
+  }
+
+  .hud-border::before {
+    content: '';
+    position: absolute;
+    top: -1px; left: -1px;
+    width: 10px; height: 10px;
+    border-top: 2px solid #ffb300;
+    border-left: 2px solid #ffb300;
+  }
+
+  .hud-border::after {
+    content: '';
+    position: absolute;
+    bottom: -1px; right: -1px;
+    width: 10px; height: 10px;
+    border-bottom: 2px solid #ffb300;
+    border-right: 2px solid #ffb300;
+  }
+
+  .flicker-effect:active {
+    opacity: 0.8;
+    transform: scale(0.98);
+  }
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 4px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: rgba(81, 69, 50, 0.05);
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(255, 215, 155, 0.2);
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 215, 155, 0.4);
+}

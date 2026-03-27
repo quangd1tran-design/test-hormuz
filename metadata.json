@@ -1,0 +1,7 @@
+{
+  "name": "HORUMZ C2 TACTICAL",
+  "description": "Advanced maritime command and control interface for real-time vessel tracking, threat assessment, and fleet logistics in the Strait of Hormuz.",
+  "requestFramePermissions": [
+    "geolocation"
+  ]
+}
