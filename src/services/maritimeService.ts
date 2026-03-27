@@ -36,6 +36,17 @@ const VESSEL_NAMES = [
   'OCEAN VOYAGER', 'DESERT ROSE', 'GULF SPIRIT', 'HORIZON', 'ECLIPSE', 'TITAN'
 ];
 
+export async function fetchVessels(): Promise<Vessel[]> {
+  try {
+    const response = await fetch('/api/vessels');
+    if (!response.ok) throw new Error('Failed to fetch vessels');
+    return await response.json();
+  } catch (error) {
+    console.error('Error fetching vessels:', error);
+    return [];
+  }
+}
+
 export function generateInitialVessels(): Vessel[] {
   return Array.from({ length: 12 }, (_, i) => ({
     id: `v-${i}`,

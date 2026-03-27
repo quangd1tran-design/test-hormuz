@@ -39,23 +39,27 @@ import {
   IntelAlert, 
   generateInitialVessels, 
   generateInitialAlerts, 
-  updateVesselPositions 
+  updateVesselPositions,
+  fetchVessels
 } from './services/maritimeService';
 
 type View = 'LIVE_MAP' | 'DATA_ANALYTICS' | 'COMMUNICATIONS' | 'FLEET_STATUS' | 'THREATS' | 'LOGISTICS' | 'TRENDS' | 'ARCHIVE';
 
 export default function App() {
   const [currentView, setCurrentView] = useState<View>('LIVE_MAP');
-  const [vessels, setVessels] = useState<Vessel[]>(generateInitialVessels());
+  const [vessels, setVessels] = useState<Vessel[]>([]);
   const [alerts, setAlerts] = useState<IntelAlert[]>(generateInitialAlerts());
   const [currentTime, setCurrentTime] = useState(new Date());
   const [selectedVessel, setSelectedVessel] = useState<Vessel | null>(null);
 
-  // Update time and vessel positions
+  // Update time and fetch vessel positions from server
   useEffect(() => {
-    const interval = setInterval(() => {
+    const interval = setInterval(async () => {
       setCurrentTime(new Date());
-      setVessels(prev => updateVesselPositions(prev));
+      const updatedVessels = await fetchVessels();
+      if (updatedVessels.length > 0) {
+        setVessels(updatedVessels);
+      }
     }, 1000);
     return () => clearInterval(interval);
   }, []);
