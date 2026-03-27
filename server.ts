@@ -1,8 +1,9 @@
 import express from "express";
 import path from "path";
+import fs from "fs";
 import { fileURLToPath } from "url";
 
-// Mock maritime data generation (moved from frontend logic)
+// Mock maritime data generation
 const ORIGINS = ['SAUDI ARABIA', 'UAE', 'IRAQ', 'KUWAIT', 'QATAR', 'OMAN', 'USA', 'GERMANY', 'LIBERIA'];
 const DESTINATIONS = ['FUJAIRAH', 'JEBEL ALI', 'BANDAR ABBAS', 'MUSCAT', 'DOHA', 'SINGAPORE', 'ROTTERDAM'];
 const VESSEL_NAMES = [
@@ -66,6 +67,8 @@ async function startServer() {
   const app = express();
   const PORT = Number(process.env.PORT) || 3000;
 
+  console.log(`[SERVER] Starting in ${process.env.NODE_ENV || 'development'} mode...`);
+
   // API Routes
   app.get("/api/vessels", (req, res) => {
     res.json(vessels);
@@ -77,23 +80,39 @@ async function startServer() {
 
   // Vite middleware for development
   if (process.env.NODE_ENV !== "production") {
-    const { createServer: createViteServer } = await import("vite");
-    const vite = await createViteServer({
-      server: { middlewareMode: true },
-      appType: "spa",
-    });
-    app.use(vite.middlewares);
+    console.log("[SERVER] Initializing Vite middleware...");
+    try {
+      const { createServer: createViteServer } = await import("vite");
+      const vite = await createViteServer({
+        server: { middlewareMode: true },
+        appType: "spa",
+      });
+      app.use(vite.middlewares);
+    } catch (e) {
+      console.warn("[SERVER] Vite not found, skipping middleware (this is normal in production if NODE_ENV is not set correctly)");
+    }
   } else {
     // Serve static files in production
     const distPath = path.resolve(process.cwd(), 'dist');
+    console.log(`[SERVER] Serving static files from: ${distPath}`);
+    
+    if (!fs.existsSync(distPath)) {
+      console.error(`[SERVER] ERROR: 'dist' directory not found at ${distPath}. Did you run 'npm run build'?`);
+    }
+
     app.use(express.static(distPath));
     app.get('*', (req, res) => {
-      res.sendFile(path.join(distPath, 'index.html'));
+      const indexPath = path.join(distPath, 'index.html');
+      if (fs.existsSync(indexPath)) {
+        res.sendFile(indexPath);
+      } else {
+        res.status(404).send("Frontend build not found. Please run 'npm run build'.");
+      }
     });
   }
 
-  app.listen(PORT, "0.0.0.0", () => {
-    console.log(`Server running on http://localhost:${PORT}`);
+  app.listen(PORT, () => {
+    console.log(`[SERVER] Listening on port ${PORT}`);
   });
 }
 
