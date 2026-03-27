@@ -1,7 +1,6 @@
 import express from "express";
 import path from "path";
 import { fileURLToPath } from "url";
-import { createServer as createViteServer } from "vite";
 
 // Mock maritime data generation (moved from frontend logic)
 const ORIGINS = ['SAUDI ARABIA', 'UAE', 'IRAQ', 'KUWAIT', 'QATAR', 'OMAN', 'USA', 'GERMANY', 'LIBERIA'];
@@ -65,7 +64,7 @@ const __dirname = path.dirname(__filename);
 
 async function startServer() {
   const app = express();
-  const PORT = 3000;
+  const PORT = Number(process.env.PORT) || 3000;
 
   // API Routes
   app.get("/api/vessels", (req, res) => {
@@ -78,6 +77,7 @@ async function startServer() {
 
   // Vite middleware for development
   if (process.env.NODE_ENV !== "production") {
+    const { createServer: createViteServer } = await import("vite");
     const vite = await createViteServer({
       server: { middlewareMode: true },
       appType: "spa",
@@ -85,7 +85,7 @@ async function startServer() {
     app.use(vite.middlewares);
   } else {
     // Serve static files in production
-    const distPath = path.join(process.cwd(), 'dist');
+    const distPath = path.resolve(process.cwd(), 'dist');
     app.use(express.static(distPath));
     app.get('*', (req, res) => {
       res.sendFile(path.join(distPath, 'index.html'));
