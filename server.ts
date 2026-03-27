@@ -65,9 +65,16 @@ const __dirname = path.dirname(__filename);
 
 async function startServer() {
   const app = express();
+  // Hostinger and other providers often use process.env.PORT
   const PORT = Number(process.env.PORT) || 3000;
 
-  console.log(`[SERVER] Starting in ${process.env.NODE_ENV || 'development'} mode...`);
+  // Ensure NODE_ENV is handled if not set by the environment
+  const isProduction = process.env.NODE_ENV === "production" || fs.existsSync(path.resolve(process.cwd(), 'dist'));
+
+  console.log(`[SERVER] Starting...`);
+  console.log(`[SERVER] Mode: ${isProduction ? 'production' : 'development'}`);
+  console.log(`[SERVER] Port: ${PORT}`);
+  console.log(`[SERVER] CWD: ${process.cwd()}`);
 
   // API Routes
   app.get("/api/vessels", (req, res) => {
@@ -75,12 +82,12 @@ async function startServer() {
   });
 
   app.get("/api/health", (req, res) => {
-    res.json({ status: "ok", timestamp: new Date().toISOString() });
+    res.json({ status: "ok", timestamp: new Date().toISOString(), mode: isProduction ? 'production' : 'development' });
   });
 
   // Vite middleware for development
-  if (process.env.NODE_ENV !== "production") {
-    console.log("[SERVER] Initializing Vite middleware...");
+  if (!isProduction) {
+    console.log("[SERVER] Initializing Vite middleware (Development)...");
     try {
       const { createServer: createViteServer } = await import("vite");
       const vite = await createViteServer({
@@ -89,31 +96,54 @@ async function startServer() {
       });
       app.use(vite.middlewares);
     } catch (e) {
-      console.warn("[SERVER] Vite not found, skipping middleware (this is normal in production if NODE_ENV is not set correctly)");
+      console.error("[SERVER] Failed to load Vite. Falling back to static serving.");
+      serveStatic(app);
     }
   } else {
-    // Serve static files in production
-    const distPath = path.resolve(process.cwd(), 'dist');
-    console.log(`[SERVER] Serving static files from: ${distPath}`);
-    
-    if (!fs.existsSync(distPath)) {
-      console.error(`[SERVER] ERROR: 'dist' directory not found at ${distPath}. Did you run 'npm run build'?`);
-    }
-
-    app.use(express.static(distPath));
-    app.get('*', (req, res) => {
-      const indexPath = path.join(distPath, 'index.html');
-      if (fs.existsSync(indexPath)) {
-        res.sendFile(indexPath);
-      } else {
-        res.status(404).send("Frontend build not found. Please run 'npm run build'.");
-      }
-    });
+    serveStatic(app);
   }
 
-  app.listen(PORT, () => {
-    console.log(`[SERVER] Listening on port ${PORT}`);
+  const server = app.listen(PORT, "0.0.0.0", () => {
+    console.log(`[SERVER] Listening on http://0.0.0.0:${PORT}`);
   });
+
+  server.on('error', (err: any) => {
+    console.error(`[SERVER] Server error: ${err.message}`);
+    if (err.code === 'EADDRINUSE') {
+      console.error(`[SERVER] Port ${PORT} is already in use.`);
+    }
+  });
+}
+
+function serveStatic(app: express.Express) {
+  // Try multiple common path resolutions for the 'dist' folder
+  const possiblePaths = [
+    path.resolve(process.cwd(), 'dist'),
+    path.resolve(__dirname, '..', 'dist'),
+    path.resolve(__dirname, 'dist')
+  ];
+
+  let distPath = "";
+  for (const p of possiblePaths) {
+    if (fs.existsSync(p) && fs.existsSync(path.join(p, 'index.html'))) {
+      distPath = p;
+      break;
+    }
+  }
+
+  if (distPath) {
+    console.log(`[SERVER] Serving static files from: ${distPath}`);
+    app.use(express.static(distPath));
+    app.get('*', (req, res) => {
+      res.sendFile(path.join(distPath, 'index.html'));
+    });
+  } else {
+    console.error("[SERVER] ERROR: Could not find 'dist' directory with 'index.html'.");
+    console.error("[SERVER] Searched in:", possiblePaths);
+    app.get('*', (req, res) => {
+      res.status(404).send("Frontend build not found. Please run 'npm run build' and ensure 'dist' exists.");
+    });
+  }
 }
 
 startServer();
